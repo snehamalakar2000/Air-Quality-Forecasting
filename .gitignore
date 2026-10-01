@@ -7,3 +7,5 @@ artifacts/
 build/
 dist/
 .DS_Store
+*.Rhistory
+ridge-diagnostic-*.txt

@@ -109,7 +109,7 @@ On Linux x86_64, Python 3.11.16:
 - Synthetic smoke passed with 48 test rows.
 - Compared real validation predictions before/after the dependency update for all three Ridge alphas. Maximum absolute differences were approximately 1.48e-12 (alpha 0.1), 8.53e-13 (alpha 1), and 3.41e-13 (alpha 10) µg/m³.
 
-The Mac error was not reproduced here because this environment uses Linux/OpenBLAS, not the user's Mac numerical stack. Mac diagnostic/test success remains to be verified locally. Docker and GitHub Actions were not run for this patch. Final real test evaluation was not rerun for this investigation; the real-data comparison used validation only.
+The Mac error was not reproduced in the Builder environment because it uses Linux/OpenBLAS, not the user's Mac numerical stack. The subsequent macOS verification reported that NumPy 2.3.5 resolved the warning and that all 37 tests passed. Docker and GitHub Actions were verified afterward and are recorded in `docs/manual_smoke_test.md` and `docs/verification.md`; those checks were not part of the original Linux patch investigation. Final real test evaluation was not rerun as part of that investigation; the real-data comparison there used validation only.
 
 ## Primary references
 

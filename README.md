@@ -22,8 +22,7 @@ python -m air_quality evaluate --config config.json --selection artifacts/select
 
 Installation needs internet or cached wheels. Validation, tests, smoke, selection, and evaluation use local files. There is no training-time downloader or live API. The original static CSV is included. Allow roughly a minute or a few minutes for selection depending on your computer.
 
-See [the Mac and VS Code instructions](docs/mac_setup.md) for each setup step. [docs/verification.md](docs/verification.md) separates checks performed by the Builder from checks you still need to run. The ZIP includes generated `artifacts/` for review; `.gitignore` excludes them when you put the source on GitHub. Keep `data/raw/` tracked.
-
+See [the Mac and VS Code instructions](docs/mac_setup.md) for each setup step. [docs/verification.md](docs/verification.md) separates checks performed by the Builder from checks you still need to run. Generated outputs are saved locally in `artifacts/` and excluded from GitHub by `.gitignore`. Run the documented commands to reproduce them. Keep `data/raw/` tracked.
 ## Prediction contract and implementation choices
 
 - `t` is the latest completed hour, interpreted as Beijing local time, `Asia/Shanghai`. Its pollution and weather readings are assumed available immediately; actual publication delays are not established by this dataset.
@@ -41,7 +40,7 @@ Configuration paths are relative to the repository root. Editing any config valu
 
 ## Measured results
 
-The included artifacts were generated from the included CSV and default config, using the pinned dependencies and Python 3.11.16 on Linux. All methods use identical scored timestamps.
+The reported results were generated from the included CSV and default config, using the pinned dependencies and Python 3.11.16 on Linux. All methods use identical scored timestamps.
 
 | Partition | Eligible scored hours | Possible target hours | Scoring coverage |
 |---|---:|---:|---:|
@@ -71,15 +70,17 @@ Both learned models underpredict high concentrations more often than persistence
 
 ## Three required figures
 
-![Training pollution and missingness](artifacts/plots/training_overview.png)
+The pipeline generates these figures locally in `artifacts/plots/`:
 
-![Fixed-period predictions](artifacts/plots/test_predictions_fixed_period.png)
+- `training_overview.png`: training pollution and missingness overview.
+- `test_predictions_fixed_period.png`: actual versus predicted PM2.5 for January 1–7, 2014.
+- `model_error_comparison.png`: model errors overall and during high-pollution periods.
 
-The predefined January 1–7, 2014 period has 168 of 168 eligible scored hours. The plotting code inserts NaNs at excluded hours to break lines; synthetic tests verify gaps and an empty window without choosing another week.
+All three figures were generated and opened successfully during my macOS Docker smoke test. Generated artifacts are excluded from GitHub; run the selection and evaluation commands above to reproduce them.
 
-![Final model errors](artifacts/plots/model_error_comparison.png)
+The predefined January 1–7, 2014 period has 168 eligible scored hours. The plotting code breaks lines at excluded hours. Synthetic tests cover gaps and an empty plotting window.
 
-Only these three figures are implemented. Additional seasonal diagnostics and feature importance are future work.
+Additional seasonal diagnostics and feature importance are future work.
 
 ## Saved outputs
 
@@ -155,7 +156,11 @@ The validation-selected learned model was Ridge, and the recommended method was 
 
 The high-pollution threshold was 218 µg/m³, with 883 high-pollution test hours. The Docker run saved the expected artifacts to the Mac `artifacts/` directory, including `selected_config.json`, the three model files, `run_metadata.json`, `test_metrics.json`, `test_predictions.csv`, `validation_metrics.csv`, and `data_quality.json`. The three required figures—`training_overview.png`, `test_predictions_fixed_period.png`, and `model_error_comparison.png`—were opened and rendered correctly.
 
-This manual check verifies local Docker build, container tests, offline model selection, offline frozen evaluation, output persistence, and figure rendering. GitHub Actions has not been run yet, and the independent Tester stage remains pending.
+This manual check verifies local Docker build, container tests, offline model selection, offline frozen evaluation, output persistence, and figure rendering.
+
+On October 1, 2026, I observed a successful GitHub Actions run for the commit “Move project files to repository root.”
+
+The independent Tester reviewed commit `3852c14` and found no confirmed algorithmic defect. It identified documentation, repository cleanup, configuration-validation, and runtime-dependency issues. Its review used source inspection and existing CI evidence; it could not execute a fresh local test run. Follow-up corrections are being addressed.
 
 ## Limitations and student-owned material
 
