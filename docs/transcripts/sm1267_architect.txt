@@ -1,0 +1,45 @@
+STUDENT_NAME: Sneha Malakar
+NETID: sm1267
+OPTION: 3
+ROLE: architect
+AGENT_TOOL: ChatGPT
+REPOSITORY_B_URL: https://github.com/snehamalakar2000/Air-Quality-Forecasting
+===== TRANSCRIPT START =====
+
+[STUDENT]
+You are the Architect for my data engineering assignment. Plan the project, but do not implement it yet.  I am choosing Option 3: Create a New Project.  Project: Air Quality Forecasting with a Reproducible ML Pipeline.  Goal: Predict Beijing's PM2.5 concentration one hour ahead using recent pollution readings, weather observations, and calendar features.  Dataset: [https://archive.ics.uci.edu/dataset/381/beijing+pm2+5+data](https://archive.ics.uci.edu/dataset/381/beijing+pm2+5+data)  Use a downloaded, static copy of the dataset. The project should run without an API connection after setup.  I want a manageable project that I can understand and explain in interviews. Use Python, pandas, scikit-learn, pytest, GitHub Actions, and Docker. Avoid deep learning for this version.  Please propose: 1. Requirements and a clear prediction-time definition. 2. A simple repository structure and important files. 3. Data validation and missing-value handling. 4. Features that avoid using future information. 5. Chronological training, validation, and test splits. 6. A persistence baseline: predict next hour equals current hour. 7. Two reasonable models and evaluation using MAE and RMSE. 8. Useful plots and an analysis of high-pollution prediction errors. 9. Meaningful typical-case and edge-case tests. 10. Reproducible setup, run, test, and Docker commands. 11. Risks, limitations, and implementation steps.  Pay particular attention to missing timestamps: next hour must mean exactly one hour later, not simply the next available row. Fit learned preprocessing only on training data, and keep the final test set out of model selection.  Provide a proposed plan suitable for docs/plan.md. Explain important choices in plain language so I can review and correct the plan before the Builder implements it.
+
+[AGENT]
+Created plan.md, covering all 11 requested areas with explanations, proposed commands, tests, and implementation steps. **No implementation was performed.**
+
+The main proposed choices are:
+
+- Predict **t + exactly one hour**, using observations available through t.
+- Restore the hourly timeline before building lags so missing timestamps cannot create incorrect targets.
+- Skip forecasts with missing current PM2.5; never impute target values.
+- Train on **2010–2012**, select models on **2013**, and reserve **2014** for final testing.
+- Compare **Ridge regression** and **Random Forest** against persistence using MAE and RMSE.
+- Keep preprocessing and models fitted only on training data, including during final evaluation.
+- Test reproducibility through pytest, GitHub Actions, and Docker runs with networking disabled.
+
+The most important assumption to review is that current-hour pollution and weather readings are available when the forecast is issued.
+
+**plan.md**Document
+
+[STUDENT]
+I reviewed the plan. I agree with the one-hour prediction definition, chronological splits, persistence baseline, and using Ridge and Random Forest. I understand that current-hour readings are assumed available and forecasts are skipped when current PM2.5 is missing.  I want to keep the first version manageable. Please reduce the required plots to: 1. A training-data pollution and missingness overview. 2. Actual versus predicted values for a fixed test period. 3. Model error comparison, including high-pollution periods.  Keep the timestamp-gap checks, leakage prevention, missing-data reports, and meaningful tests. Treat other plots as future improvements.  Please update the plan and provide the finalized docs/plan.md. Do not implement the project yet.
+
+[AGENT]
+Updated plan.md with your approved decisions and only three required figures:
+
+1. Training pollution and missingness overview.
+2. Actual versus predicted values for January 1–7, 2014.
+3. Model error comparison, including high-pollution periods.
+
+Other plots are deferred. Timestamp-gap checks, leakage prevention, missing-data reports, and meaningful tests remain required.
+
+**No project implementation was performed.**
+
+**plan.md**Document
+
+===== TRANSCRIPT END =====
