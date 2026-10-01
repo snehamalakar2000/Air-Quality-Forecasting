@@ -1,4 +1,5 @@
 import copy
+import importlib.metadata
 import json
 from pathlib import Path
 
@@ -162,6 +163,73 @@ def test_invalid_configuration(small_config):
     changed["splits"]["validation"][0] = changed["splits"]["train"][0]
     with pytest.raises(ValueError, match="ordered, contiguous"):
         validate_config(changed)
+
+
+@pytest.mark.parametrize("grid_name", ["ridge_alphas", "forest_depths"])
+def test_empty_model_grid_fails_early(small_config, grid_name):
+    changed = copy.deepcopy(small_config)
+    changed["models"][grid_name] = []
+    with pytest.raises(ValueError, match=rf"models\.{grid_name}.*non-empty"):
+        validate_config(changed)
+
+
+@pytest.mark.parametrize("field,value", [
+    ("n_estimators", 0),
+    ("n_estimators", -1),
+    ("n_estimators", 1.5),
+    ("n_estimators", True),
+    ("min_samples_leaf", 0),
+    ("min_samples_leaf", -1),
+    ("min_samples_leaf", 1.5),
+    ("min_samples_leaf", 0.0),
+    ("min_samples_leaf", True),
+    ("n_jobs", 0),
+    ("n_jobs", 1.5),
+    ("n_jobs", True),
+])
+def test_invalid_forest_settings_fail_early(small_config, field, value):
+    changed = copy.deepcopy(small_config)
+    changed["models"][field] = value
+    with pytest.raises(ValueError, match=rf"models\.{field}"):
+        validate_config(changed)
+
+
+@pytest.mark.parametrize("n_estimators,min_samples_leaf,n_jobs", [
+    (1, 1, None),
+    (1, 0.5, -1),
+    (1, 1.0, 2),
+])
+def test_valid_forest_parameter_boundaries(small_config, n_estimators,
+                                            min_samples_leaf, n_jobs):
+    changed = copy.deepcopy(small_config)
+    changed["models"].update(n_estimators=n_estimators,
+                              min_samples_leaf=min_samples_leaf, n_jobs=n_jobs)
+    validate_config(changed)
+
+
+@pytest.mark.parametrize("missing_key", ["sha256", "size_bytes", "rows", "start", "end"])
+def test_missing_source_metadata_fails_early(small_config, missing_key):
+    changed = copy.deepcopy(small_config)
+    del changed["source"][missing_key]
+    with pytest.raises(ValueError, match="source metadata missing required keys"):
+        validate_config(changed)
+
+
+def test_metadata_omits_optional_pytest_when_uninstalled(small_config, monkeypatch):
+    from air_quality import pipeline
+
+    quality = pipeline.prepare(small_config)[2]
+    original_version = pipeline.importlib.metadata.version
+
+    def version_without_pytest(name):
+        if name == "pytest":
+            raise importlib.metadata.PackageNotFoundError(name)
+        return original_version(name)
+
+    monkeypatch.setattr(pipeline.importlib.metadata, "version", version_without_pytest)
+    packages = pipeline.metadata(small_config, quality)["packages"]
+    assert "pytest" not in packages
+    assert "numpy" in packages
 
 
 def test_real_static_source_validates_without_training():

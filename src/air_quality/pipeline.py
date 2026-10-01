@@ -4,6 +4,7 @@ import copy
 import hashlib
 import importlib.metadata
 import json
+import numbers
 from pathlib import Path
 import platform
 import subprocess
@@ -35,6 +36,47 @@ def read_config(path):
 
 
 def validate_config(config):
+    source = config.get("source")
+    if not isinstance(source, dict):
+        raise ValueError("source metadata must be an object")
+    required_source_keys = {"sha256", "size_bytes", "rows", "start", "end"}
+    missing_source_keys = sorted(required_source_keys - source.keys())
+    if missing_source_keys:
+        raise ValueError(
+            "source metadata missing required keys: " + ", ".join(missing_source_keys))
+
+    models = config.get("models")
+    if not isinstance(models, dict):
+        raise ValueError("models must be an object")
+    for grid_name in ["ridge_alphas", "forest_depths"]:
+        grid = models.get(grid_name)
+        if not isinstance(grid, list) or not grid:
+            raise ValueError(f"models.{grid_name} must be a non-empty list")
+
+    n_estimators = models.get("n_estimators")
+    if (isinstance(n_estimators, bool)
+            or not isinstance(n_estimators, numbers.Integral)
+            or n_estimators < 1):
+        raise ValueError("models.n_estimators must be an integer greater than or equal to 1")
+
+    min_samples_leaf = models.get("min_samples_leaf")
+    valid_integer_leaf = (isinstance(min_samples_leaf, numbers.Integral)
+                          and not isinstance(min_samples_leaf, bool)
+                          and min_samples_leaf >= 1)
+    valid_fraction_leaf = (isinstance(min_samples_leaf, numbers.Real)
+                           and not isinstance(min_samples_leaf, bool)
+                           and 0 < min_samples_leaf <= 1)
+    if not (valid_integer_leaf or valid_fraction_leaf):
+        raise ValueError(
+            "models.min_samples_leaf must be an integer >= 1 or a float in (0, 1]")
+
+    n_jobs = models.get("n_jobs")
+    if (n_jobs is not None
+            and (isinstance(n_jobs, bool)
+                 or not isinstance(n_jobs, numbers.Integral)
+                 or n_jobs == 0)):
+        raise ValueError("models.n_jobs must be None or a nonzero integer")
+
     if config["timezone"] != "Asia/Shanghai":
         raise ValueError("Version 1 requires Asia/Shanghai timestamps")
     previous_end = None
@@ -94,9 +136,15 @@ def metadata(config, quality):
                                 capture_output=True, text=True).stdout.strip()
     except (subprocess.CalledProcessError, FileNotFoundError):
         commit = None
-    packages = ["numpy", "pandas", "scikit-learn", "scipy", "matplotlib", "joblib", "pytest"]
+    packages = ["numpy", "pandas", "scikit-learn", "scipy", "matplotlib", "joblib"]
+    package_versions = {name: importlib.metadata.version(name) for name in packages}
+    try:
+        package_versions["pytest"] = importlib.metadata.version("pytest")
+    except importlib.metadata.PackageNotFoundError:
+        # pytest is used by development and CI, but is not needed at runtime.
+        pass
     return {"python": platform.python_version(), "platform": platform.platform(),
-            "packages": {name: importlib.metadata.version(name) for name in packages},
+            "packages": package_versions,
             "seed": config["seed"], "effective_configuration": config,
             "configuration_sha256": config_hash(config), "source_sha256": quality["sha256"],
             "eligible_counts": {k: v["eligible_rows"] for k, v in quality["partitions"].items()},
