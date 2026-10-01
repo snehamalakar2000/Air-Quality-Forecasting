@@ -22,7 +22,7 @@ python -m air_quality evaluate --config config.json --selection artifacts/select
 
 Installation needs internet or cached wheels. Validation, tests, smoke, selection, and evaluation use local files. There is no training-time downloader or live API. The original static CSV is included. Allow roughly a minute or a few minutes for selection depending on your computer.
 
-See [the Mac and VS Code instructions](docs/mac_setup.md) for each setup step. [docs/verification.md](docs/verification.md) separates checks performed by the Builder from checks you still need to run. Generated outputs are saved locally in `artifacts/` and excluded from GitHub by `.gitignore`. Run the documented commands to reproduce them. Keep `data/raw/` tracked.
+See [the Mac and VS Code instructions](docs/mac_setup.md) for each setup step. [docs/verification.md](docs/verification.md) distinguishes historical Builder checks, student macOS checks, CI results, and independent Tester review. Generated outputs are saved locally in `artifacts/` and excluded from GitHub by `.gitignore`. Run the documented commands to reproduce them. Keep `data/raw/` tracked.
 ## Prediction contract and implementation choices
 
 - `t` is the latest completed hour, interpreted as Beijing local time, `Asia/Shanghai`. Its pollution and weather readings are assumed available immediately; actual publication delays are not established by this dataset.
@@ -135,11 +135,11 @@ docker run --rm --network none -v "$PWD/artifacts:/app/artifacts" air-quality-fo
 
 The Builder did not build or run Docker in its Linux environment. The digest was resolved against Docker Hub on October 1, 2026. The manual macOS verification below records the actual local Docker results.
 
-`.github/workflows/ci.yml` runs on push and pull request, installs Python 3.11 and pinned dependencies, validates the real static CSV, runs tests, builds Docker, and runs a deterministic synthetic smoke command with `--network none`. CI never selects or evaluates models on the real 2014 holdout. GitHub Actions execution has not occurred here; upload to your repository and check the Actions tab.
+`.github/workflows/ci.yml` runs on push and pull request, installs Python 3.11 and pinned dependencies, validates the real static CSV, runs tests, builds Docker, and runs a deterministic synthetic smoke command with `--network none`. CI never selects or evaluates models on the real 2014 holdout. After the metadata and configuration-validation fixes were pushed, I observed a successful GitHub Actions run on October 1, 2026. Workflow history is available in the [Actions tab](https://github.com/snehamalakar2000/Air-Quality-Forecasting/actions).
 
-### Manual Docker smoke test completed on macOS
+### Historical manual Docker smoke test completed on macOS
 
-On October 1, 2026, the project was built and run locally on macOS using the `air-quality-forecasting:local` image. The container test command completed with **37 passed**. The selection and evaluation commands below also completed without errors, with `--network none` and the Mac `artifacts/` directory mounted into `/app/artifacts`:
+On October 1, 2026, the project was built and run locally on macOS using the `air-quality-forecasting:local` image. The container test command completed with **37 passed** at that stage, before the later regression tests expanded the suite to 60 tests. The selection and evaluation commands below also completed without errors, with `--network none` and the Mac `artifacts/` directory mounted into `/app/artifacts`:
 
 ```bash
 docker run --rm --network none -v "$PWD/artifacts:/app/artifacts" air-quality-forecasting:local python -m air_quality select --config config.json
@@ -158,15 +158,21 @@ The high-pollution threshold was 218 µg/m³, with 883 high-pollution test hours
 
 This manual check verifies local Docker build, container tests, offline model selection, offline frozen evaluation, output persistence, and figure rendering.
 
-On October 1, 2026, I observed a successful GitHub Actions run for the commit “Move project files to repository root.”
+Historical CI evidence: on October 1, 2026, I observed a successful GitHub Actions run for the commit “Move project files to repository root.” The subsequent metadata and configuration-validation fixes also passed CI, as noted above.
 
-The independent Tester reviewed commit `3852c14` and found no confirmed algorithmic defect. It identified documentation, repository cleanup, configuration-validation, and runtime-dependency issues. Its review used source inspection and existing CI evidence; it could not execute a fresh local test run. Follow-up corrections are being addressed.
+The initial independent Tester review of historical commit `3852c14` found no confirmed algorithmic defect, but identified documentation, repository cleanup, configuration-validation, and runtime-dependency issues. That review used source inspection and existing CI evidence; the Tester could not execute a fresh local test run.
+
+Follow-up fixes made pytest metadata optional and added early configuration validation with regression tests. The Builder reported **60 tests passed** using Python 3.12, plus successful dataset validation and synthetic smoke with pytest metadata absent. On my Mac, dataset validation passed with 43,824 rows and no absent hours, and synthetic smoke passed with 48 test rows. I also observed a successful CI run after pushing the fixes. The earlier 37-test Docker result remains a historical manual check, not a new local Docker run of the expanded suite.
+
+The Tester's follow-up identified stale documentation and historical references, addressed in this documentation update, plus the lower-priority maintenance and validation limitations below. Full verification details and evidence boundaries are recorded in [docs/verification.md](docs/verification.md).
 
 ## Limitations and student-owned material
 
 These historical 2010–2014 readings from one pollution location do not establish present-day or other-city performance. Airport weather is spatially mismatched with the monitor. Arrival times are assumed, accumulated wind/snow/rain reset conventions need investigation, and missing readings reduce coverage. A single validation year, no uncertainty intervals, and one-step-only predictions limit conclusions. This is not an official warning system.
 
-Complete your own [manual smoke-test record](docs/manual_smoke_test.md), [personal reflection](docs/reflection.md), and [conversation transcript record](docs/conversations.md). They contain prompts and empty fields, not invented student results or statements.
+Remaining technical improvements identified by the Tester are deeper type/range validation for every Ridge alpha and forest depth grid element, and maintenance of CI action runtimes and runner versions. The Tester reported Node.js 20 runtime and upcoming `ubuntu-latest` migration warnings; these did not prevent the reported CI run from passing.
+
+Review the [manual smoke-test record](docs/manual_smoke_test.md), [personal reflection](docs/reflection.md), and [conversation transcript record](docs/conversations.md). Keep completed results accurate, finish any remaining reflection fields, and save the full visible role conversations under `docs/transcripts/` for submission.
 
 ## Data attribution
 
