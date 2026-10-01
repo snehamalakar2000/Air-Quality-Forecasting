@@ -174,6 +174,36 @@ Remaining technical improvements identified by the Tester are deeper type/range 
 
 Review the [manual smoke-test record](docs/manual_smoke_test.md), [personal reflection](docs/reflection.md), and [conversation transcript record](docs/conversations.md). Keep completed results accurate, finish any remaining reflection fields, and save the full visible role conversations under `docs/transcripts/` for submission.
 
+## AI-assisted workflow and reflection
+
+I chose **Option 3: Create a New Project**. My project predicts Beijing PM2.5 one hour ahead using historical pollution readings, weather observations, and calendar features. I wanted to build a reproducible forecasting pipeline and practice testing, Docker, and GitHub Actions.
+
+### How the AI roles contributed
+
+The Architect helped define the prediction task, project structure, chronological data splits, baseline, and testing plan. I reviewed the plan before giving it to the Builder in a separate conversation.
+
+The Builder implemented the pipeline, tests, Docker setup, and documentation. It also helped investigate the numerical issue I encountered on my Mac and made corrections based on the Tester’s findings.
+
+The independent Tester reviewed the implementation against the plan and checked for problems such as data leakage and incorrect forecast timing. It identified stale documentation, broken artifact links, unnecessary tracked files, and weaknesses in configuration validation and optional dependency handling. Its initial review relied on source inspection and existing CI evidence because its environment blocked a fresh local execution.
+
+### Recommendations I accepted or changed
+
+I accepted the recommendation to use chronological training, validation, and test splits and compare the models with a persistence baseline. This made the evaluation more realistic and helped show whether the models improved on simply using the current pollution reading.
+
+I changed the Architect’s proposed visualization scope to keep the project manageable. I requested three main figures: a training-data overview, actual versus predicted values for a fixed test period, and a model-error comparison that includes high-pollution periods. I kept the timestamp-gap and leakage checks because they were important to the validity of the results.
+
+### How I verified the project
+
+Before the Tester stage, I built and ran the Docker image on my Mac. All 37 tests available at that stage passed in the container. I also ran the synthetic smoke test, model selection, and frozen evaluation with networking disabled. I checked that outputs were saved and opened all three figures.
+
+After the Tester’s findings, I applied the cleanup and targeted code fixes. The Builder reported 60 passing tests for the expanded suite. I reran dataset validation and the synthetic smoke test on my Mac and checked that GitHub Actions passed after pushing the changes.
+
+### What I learned
+
+This process showed me that working code is only one part of a finished project. Documentation needs to match what was actually tested, generated files need to be handled carefully, and AI recommendations still need my review.
+
+The analysis also showed why a simple baseline matters. Ridge improved overall test MAE by only about 0.9% over persistence, and both learned models performed worse than persistence during high-pollution periods. I would not describe the project as a major forecasting improvement based only on its overall results.
+
 ## Data attribution
 
 Chen, S. (2015). *Beijing PM2.5* [Dataset]. UCI Machine Learning Repository. https://doi.org/10.24432/C5JS49. Dataset license: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Source details and checksum: [data/README.md](data/README.md). The original CSV is preserved unchanged; derived features and reports are project transformations.
